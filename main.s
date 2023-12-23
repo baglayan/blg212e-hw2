@@ -7,7 +7,7 @@
 ;            implements and measures the
 ;            running time of Bubble Sort
 ;            algorithm.
-;        In progress as of 2023-12-22
+;        In progress as of 2023-12-23
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
                 THUMB                           ;instruct the assembler to interpret following code as thumb instructions
@@ -52,6 +52,8 @@ stop            B    stop                       ;infinite loop to signify end of
         
                 ENDP                            ;declare end of procedure
                 
+;----------------------------------------------- MEMORY COPY
+                
 memcpy          PROC                            ;declare start of procedure 'memcpy'
                 ;;;;;;
                 ;arguments:
@@ -77,10 +79,11 @@ memcpy_cmp      CMP R3, R0                      ;compare R3 with R0
                 POP {R1-R5}                     ;pop back saved registers
                 BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
+;-----------------------------------------------
         
 timer_init      PROC                            ;declare start of procedure 'timer_init'
 
-                PUSH {R0-R3}                    ;save registers in stack
+                PUSH {R0-R3, LR}                ;save registers in stack
 
                 LDR R0, =SYST_CSR               ;load SysTick Control and Status Register address into R0
                 LDR R1, =SYST_RVR               ;load SysTick Reload Value Register address into R1
@@ -90,9 +93,8 @@ timer_init      PROC                            ;declare start of procedure 'tim
                 STR R2, [R1]                    ;store RELOAD value in Reload Value Register
                 STR R3, [R0]                    ;store START value in Control and Status Register
                 
-                POP {R0-R3}                     ;pop back saved registers
+                POP {R0-R3, PC}                 ;pop back saved registers
 
-                BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
         
 timer_stop      PROC                            ;declare start of procedure 'timer_stop'
@@ -110,6 +112,7 @@ save_exec       PROC                            ;declare start of procedure 'sav
                 BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
         
+;----------------------------------------------- BUBBLESORT
 bubblesort      PROC                            ;declare start of procedure 'bubblesort'. R0 is the iterator
                 PUSH {LR}
 
@@ -127,47 +130,56 @@ inner_loop_body LDR R4, =sorted_array           ;load the address of 'array' int
                 SUBS R7, R2, #4                 ;load the value of j-1 into R7
                 LDR R5, [R5, R7]                ;load the j-1th element into R5
                 
-                SUBS R2, R2, #4                 ;decrement inner loop iterator
-                ADDS R1, R1, #4                 ;increment outer loop iterator
-                
                 CMP R4, R5                      ;compare R4 and R5
-                BCS inner_loop_cmp              ;branch to inner_loop_cmp if R4 is higher than or equal to R5
+                BHI decr_j_branch               ;branch to inner_loop_cmp if R4 is higher than or equal to R5
                                 
                 BL swap_elements                ;branch with link to 'swap_elements' procedure to swap elements
                 
+                SUBS R2, R2, #4                 ;decrement inner loop iterator
+                
+inner_loop_cmp  CMP R2, R1                      ;compare inner loop iterator with outer loop iterator
+                BHS incr_i_branch               ;branch to inner_loop_body if higher or equal
+                
+                ADDS R1, R1, #4                 ;increment outer loop iterator
 
-inner_loop_cmp  PUSH {R2}
-                ADDS R2, R2, R3
-                CMP R2, R1                      ;compare inner loop iterator with outer loop iterator
-                POP {R2}
-                BCS inner_loop_body             ;branch to inner_loop_body if higher or equal
-
-outer_loop_cmp  SUBS R3, R0, #4                 ;decrement main iterator R0 and put the value into R3
-                CMP R1, R3                      ;compare the outer loop iterator with main iterator - 1
-                BCC outer_loop_body             ;branch to outer_loop_body if R1 is lower than or same as R3
+outer_loop_cmp  PUSH {R0}
+                SUBS R0, R0, #8                 ;decrement main iterator R0 and put the value into R3
+                CMP R1, R0                      ;compare the outer loop iterator with main iterator - 1
+                POP {R0}
+                BLS outer_loop_body             ;branch to outer_loop_body if R1 is less than or equal to R3
 
                 POP {PC}                        ;branch back to caller
+                
+decr_j_branch   PROC
+                SUBS R2, R2, #4                 ;decrement inner loop iterator
+                B inner_loop_cmp
+                ENDP
+                
+incr_i_branch   PROC
+                ;ADDS R1, R1, #4                 ;increment outer loop iterator
+                B inner_loop_body
+                ENDP
+                
                 ENDP                            ;declare end of procedure
+;-----------------------------------------------
         
 swap_elements   PROC                            ;declare start of procedure 'swap_elements'
-                PUSH {R0-R7}                    ;save R0 in stack
+                PUSH {R0-R7, LR}                ;save registers in stack
 
                 LDR R4, =sorted_array           ;load the start address of array into R4
                 
-                ADDS R2, R2, #4
                 ADDS R5, R4, R2                 ;R5 holds the address of A[j]
                 
-                SUBS R7, R2, #4
-                ADDS R4, R4, R7                 ;R4 now holds the address of A[j-1]
+                SUBS R2, R2, #4
+                ADDS R4, R4, R2                 ;R4 now holds the address of A[j-1]
                 
                 LDR R6, [R4]                    ;R6 will act as a temporary holder
                 LDR R0, [R5]                    ;R0 will hold the value of R5
                 STR R6, [R5]                    ;R6 is stored into address specified by R5
                 STR R0, [R4]                    ;R0 is stored into address specified by R4
                 
-                POP {R0-R7}                     ;pop back R0 from the stack
+                POP {R0-R7, PC}                 ;pop back registers from the stack
                 
-                BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
                 
         
@@ -177,7 +189,7 @@ array           DCD 0xa603e9e1, 0xb38cf45a, 0xf5010841, 0x32477961, 0x10bc09c5, 
 size            EQU 0x190                       ;array size in bytes
 
                 AREA writeable, DATA, READWRITE
-execution_times SPACE size                      ;initialize location for execution times in the memory
-sorted_array    SPACE size
+execution_times SPACE size                      ;initialize location for execution times in memory
+sorted_array    SPACE size                      ;initialize location for to-be-sorted array in memory
         
                 END                             ;declare the end of code
