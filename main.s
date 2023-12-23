@@ -131,15 +131,14 @@ inner_loop_body LDR R4, =sorted_array           ;load the address of 'array' int
                 LDR R5, [R5, R7]                ;load the j-1th element into R5
                 
                 CMP R4, R5                      ;compare R4 and R5
-                BHI decr_j_branch               ;branch to inner_loop_cmp if R4 is higher than or equal to R5
+                BHS decr_j_branch               ;branch to inner_loop_cmp if R4 is higher than or equal to R5
                                 
                 BL swap_elements                ;branch with link to 'swap_elements' procedure to swap elements
                 
                 SUBS R2, R2, #4                 ;decrement inner loop iterator
                 
 inner_loop_cmp  CMP R2, R1                      ;compare inner loop iterator with outer loop iterator
-                BHS incr_i_branch               ;branch to inner_loop_body if higher or equal
-                
+                BGE incr_i_branch               ;branch to inner_loop_body if higher or equal
                 ADDS R1, R1, #4                 ;increment outer loop iterator
 
 outer_loop_cmp  PUSH {R0}
@@ -156,7 +155,6 @@ decr_j_branch   PROC
                 ENDP
                 
 incr_i_branch   PROC
-                ;ADDS R1, R1, #4                 ;increment outer loop iterator
                 B inner_loop_body
                 ENDP
                 
