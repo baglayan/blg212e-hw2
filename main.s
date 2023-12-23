@@ -13,7 +13,6 @@
                 THUMB                           ;instruct the assembler to interpret following code as thumb instructions
                 AREA main, CODE, READONLY       ;declare new area
                 
-                
                 ALIGN                           ;align code within appropriate boundaries        
                 ENTRY                           ;declare as entry point
                 EXPORT __main                   ;declare __main symbol to be used by linker
@@ -32,7 +31,7 @@ __main          PROC                            ;declare start of procedure 'mai
                 MOVS R0, #8                     ;set main loop iterator to 8
                 B m_cmp                         ;branch to loop comparison
         
-m_body          BL memcpy
+m_body          BL memcpy                       ;branch to memcpy to copy first N elements to the array
                 BL save_start                   ;branch with link to save_start procedure to save start time to memory
                 BL bubblesort                   ;branch with link to bubblesort procedure
                 BL save_exec                    ;branch with link to save_exec procedure to save execution time to memory
@@ -97,18 +96,53 @@ timer_init      PROC                            ;declare start of procedure 'tim
 
                 ENDP                            ;declare end of procedure
         
-timer_stop      PROC                            ;declare start of procedure 'timer_stop'
+timer_stop      PROC                            ;declare start of procedure 'timer_stop' to clear
+                
+                PUSH {R0, LR}                   ;save link register and a scratch register
 
+                LDR R0, =SYST_CSR               ;load the address of SysTick Control and Status Register into R0
+                MOVS R1, #0                      ;prepare value to clear the ENABLE bit
+                STR R1, [R0]                    ;clear the ENABLE bit to stop the timer
+
+                POP {R0, PC}
+                
                 BX LR                           ;branch back to caller
+                ENDP                            ;declare end of procedure
+                
+timer_value     PROC                            ;declare start of procedure timer_value
+                PUSH {LR}                       ;save the link register to stack
+
+                LDR R0, =SYST_CVR               ;load the address of Current Value Register into R0
+                LDR R0, [R0]                    ;load the current timer value into R0
+
+                POP {PC}                        ;branch back to caller
                 ENDP                            ;declare end of procedure
         
 save_start      PROC                            ;declare start of procedure 'save_start'               
+                PUSH {R0-R3, LR}                ;save registers in stack
 
+                LDR R0, =execution_times        ;load execution_times address into R0
+                ADDS R0, R0, R1                 ;offset R0
+
+                BL timer_value                  ;branch to timer_value
+                STR R0, [R0]                    ;store the timer value into memory
+
+                POP {R0-R3, PC}
                 BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
         
 save_exec       PROC                            ;declare start of procedure 'save_exec'
+                PUSH {R0-R3, LR}                ;save registers in stack
 
+                LDR R0, =execution_times        ;load execution_times address into R0
+                ADDS R0, R0, R1                 ;offset R0
+
+                BL timer_value                  ;branch to timer_value
+                LDR R2, [R0]                    ;load the start time from memory
+                SUBS R0, R0, R2                 ;calculate the execution time
+                STR R0, [R0]                    ;store the execution time into memory
+
+                POP {R0-R3, PC} 
                 BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
         
