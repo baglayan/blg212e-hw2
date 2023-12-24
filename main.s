@@ -127,18 +127,18 @@ timer_value     PROC                            ;declare start of procedure time
                 POP {R0, PC}                    ;branch back to caller
                 ENDP                            ;declare end of procedure
                 
-reset_cvr       PROC                    
+reset_cvr       PROC                            ;declare start of procedure reset_cvr that resets SYST_CVR to RELOAD value 
                 
-                PUSH {R0, R1, LR}
+                PUSH {R0, R1, LR}               ;push registers to stack
                 
-                LDR R0, =SYST_RVR
-                LDR R1, =SYST_CVR
-                LDR R0, [R0]
-                STR R0, [R1]
+                LDR R0, =SYST_RVR               ;load RVR address into R0
+                LDR R1, =SYST_CVR               ;load CVR address into R1
+                LDR R0, [R0]                    ;load the value inside RVR into R0
+                STR R0, [R1]                    ;store the value inside R0 into address held by CVR
                 
-                POP {R0, R1, PC}
+                POP {R0, R1, PC}                ;pop saved registers back from stack
                 
-                ENDP
+                ENDP                            ;declare end of procedure
         
 save_start      PROC                            ;declare start of procedure 'save_start'               
                 PUSH {R0-R4, LR}                ;save registers to stack
