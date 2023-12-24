@@ -62,7 +62,6 @@ __heap_limit
                 EXPORT   __Vectors
                 EXPORT   __Vectors_End
                 EXPORT   __Vectors_Size
-				;IMPORT Systick_Handler
 
 __Vectors       DCD      __initial_sp                        ;     Top of Stack
                 DCD      Reset_Handler                       ;     Reset Handler
@@ -80,7 +79,7 @@ __Vectors       DCD      __initial_sp                        ;     Top of Stack
                 DCD      0                                   ;     Reserved
                 DCD      PendSV_Handler                      ;  -2 PendSV Handler
                 DCD      SysTick_Handler                     ;  -1 SysTick Handler
-	
+
                 ; Interrupts
                 DCD      Interrupt0_Handler                  ;   0 Interrupt 0
                 DCD      Interrupt1_Handler                  ;   1 Interrupt 1
@@ -130,11 +129,6 @@ $Handler_Name   PROC
                 B        .
                 ENDP
                 MEND
-SysTick_Handler PROC
-				EXPORT SysTick_Handler				[WEAK]
-				ADDS	R5, R5, #1
-				BX		LR
-				;MEND
 
 
 ; Default exception/interrupt handler
@@ -142,7 +136,7 @@ SysTick_Handler PROC
                 Set_Default_Handler  NMI_Handler
                 Set_Default_Handler  SVC_Handler
                 Set_Default_Handler  PendSV_Handler
-                ;Set_Default_Handler  SysTick_Handler
+                Set_Default_Handler  SysTick_Handler
 
                 Set_Default_Handler  Interrupt0_Handler
                 Set_Default_Handler  Interrupt1_Handler
