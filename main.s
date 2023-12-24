@@ -46,6 +46,9 @@ m_cmp           PUSH {R1}
         
         
                 BL timer_stop                   ;branch to timer_stop to stop systick timer
+                
+                LDR R0, =sorted_array
+                LDR R1, =execution_times
         
 stop            B    stop                       ;infinite loop to signify end of program
         
@@ -101,48 +104,51 @@ timer_stop      PROC                            ;declare start of procedure 'tim
                 PUSH {R0, LR}                   ;save link register and a scratch register
 
                 LDR R0, =SYST_CSR               ;load the address of SysTick Control and Status Register into R0
-                MOVS R1, #0                      ;prepare value to clear the ENABLE bit
+                MOVS R1, #0                     ;prepare value to clear the ENABLE bit
                 STR R1, [R0]                    ;clear the ENABLE bit to stop the timer
 
-                POP {R0, PC}
+                POP {R0, PC}                    ;pop back saved registers
                 
                 BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
                 
 timer_value     PROC                            ;declare start of procedure timer_value
-                PUSH {LR}                       ;save the link register to stack
+                PUSH {R0, LR}                   ;save the link register to stack
 
                 LDR R0, =SYST_CVR               ;load the address of Current Value Register into R0
-                LDR R0, [R0]                    ;load the current timer value into R0
+                LDR R4, [R0]                    ;load the current timer value into R0
 
-                POP {PC}                        ;branch back to caller
+                POP {R0, PC}                    ;branch back to caller
                 ENDP                            ;declare end of procedure
         
 save_start      PROC                            ;declare start of procedure 'save_start'               
-                PUSH {R0-R3, LR}                ;save registers in stack
+                PUSH {R0-R4, LR}                ;save registers in stack
 
-                LDR R0, =execution_times        ;load execution_times address into R0
-                ADDS R0, R0, R1                 ;offset R0
+                LDR R1, =execution_times        ;load execution_times address into R1
+                SUBS R0, R0, #8 
+                ADDS R1, R1, R0                 ;offset R1
 
                 BL timer_value                  ;branch to timer_value
-                STR R0, [R0]                    ;store the timer value into memory
+                STR R4, [R1]                    ;store the timer value into memory
 
-                POP {R0-R3, PC}
+                POP {R0-R4, PC}
                 BX LR                           ;branch back to caller
+                
                 ENDP                            ;declare end of procedure
         
 save_exec       PROC                            ;declare start of procedure 'save_exec'
-                PUSH {R0-R3, LR}                ;save registers in stack
+                PUSH {R0-R4, LR}                ;save registers in stack
 
-                LDR R0, =execution_times        ;load execution_times address into R0
-                ADDS R0, R0, R1                 ;offset R0
+                LDR R1, =execution_times        ;load execution_times address into R0
+                SUBS R0, R0, #8 
+                ADDS R1, R1, R0                 ;offset R0
 
                 BL timer_value                  ;branch to timer_value
-                LDR R2, [R0]                    ;load the start time from memory
-                SUBS R0, R0, R2                 ;calculate the execution time
-                STR R0, [R0]                    ;store the execution time into memory
+                LDR R2, [R1]                    ;load the start time from memory
+                SUBS R3, R4, R2                 ;calculate the execution time
+                STR R3, [R0]                    ;store the execution time into memory
 
-                POP {R0-R3, PC} 
+                POP {R0-R4, PC} 
                 BX LR                           ;branch back to caller
                 ENDP                            ;declare end of procedure
         
@@ -196,7 +202,7 @@ incr_i_branch   PROC
 ;-----------------------------------------------
         
 swap_elements   PROC                            ;declare start of procedure 'swap_elements'
-                PUSH {R0-R7, LR}                ;save registers in stack
+                PUSH {R0-R5, LR}                ;save registers in stack
 
                 LDR R4, =sorted_array           ;load the start address of array into R4
                 
@@ -205,12 +211,12 @@ swap_elements   PROC                            ;declare start of procedure 'swa
                 SUBS R2, R2, #4
                 ADDS R4, R4, R2                 ;R4 now holds the address of A[j-1]
                 
-                LDR R6, [R4]                    ;R6 will act as a temporary holder
+                LDR R3, [R4]                    ;R3 will act as a temporary holder
                 LDR R0, [R5]                    ;R0 will hold the value of R5
-                STR R6, [R5]                    ;R6 is stored into address specified by R5
+                STR R3, [R5]                    ;R3 is stored into address specified by R5
                 STR R0, [R4]                    ;R0 is stored into address specified by R4
                 
-                POP {R0-R7, PC}                 ;pop back registers from the stack
+                POP {R0-R5, PC}                 ;pop back registers from the stack
                 
                 ENDP                            ;declare end of procedure
                 
